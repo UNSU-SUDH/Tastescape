@@ -15,8 +15,8 @@ app = Flask(__name__)
 # Initialize Appwrite client
 client = Client()
 
-client.set_endpoint(os.environ.get('APPWRITE_PROJECT_ID'))  # or your self-hosted URL
-client.set_project(os.environ.get("APPWRITE_ENDPOINT"))  # Replace with your project ID
+client.set_endpoint(os.environ.get('686ff47c0033eb71754a'))  # or your self-hosted URL
+client.set_project(os.environ.get("https://fra.cloud.appwrite.io/v1"))  # Replace with your project ID
 client.set_key(os.environ.get("APPWRITE_KEY"))  # Use an API key with database access
 
 # Initialize the Databases service
@@ -67,7 +67,6 @@ def add_review():
     return jsonify({"status": "added", "restaurant_id": restaurant_id})
 
 
-#just commeting
 @app.route("/reviews/<int:restaurant_id>", methods=["GET"])
 def get_reviews(restaurant_id):
     cursor.execute("SELECT * FROM reviews WHERE restaurant_id = %s", (restaurant_id,))

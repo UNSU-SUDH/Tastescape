@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,7 +40,7 @@
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
             gap: 20px;
@@ -62,7 +63,7 @@
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .form-row {
@@ -135,7 +136,7 @@
             background-color: rgba(255, 255, 255, 0.9);
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .entries-list {
@@ -194,7 +195,7 @@
             .form-row {
                 flex-direction: column;
             }
-            
+
             .entry-info {
                 flex-direction: column;
                 gap: 10px;
@@ -202,6 +203,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -244,7 +246,15 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        client = Client()
+
+        client.set_endpoint(os.environ.get('686ff47c0033eb71754a'))
+        client.set_project(os.environ.get("https://fra.cloud.appwrite.io/v1"))
+        client.set_key(os.environ.get("standard_0b5b49618c775b9dac4e88307470d979e69858d3c81052a718fd2007d05fbbc3ef59ba3f40ede34b0a8924557e1c91b7d712c0e0ca2f4ecd963879965da8551a1940ba7ff64c668d1053db32bd062c2277f2eb7a58b951af7f5941e7e56ca6e0083162657864b86fff5531e336e1dd7d5fa006ab520944a57fc1c521f7faf907"))
+
+        database = Databases(client, database_id = os.environ.get('686ff4f100110d98503c'))
+
+        document.addEventListener('DOMContentLoaded', function () {
             // DOM Elements
             const restaurantInput = document.getElementById('restaurant');
             const dishInput = document.getElementById('dish');
@@ -266,7 +276,7 @@
             removeBtn.addEventListener('click', removeEntry);
 
             // Functions
-            function addEntry() {
+          async  function  addEntry()  {
                 const restaurant = restaurantInput.value.trim();
                 const dish = dishInput.value.trim();
                 const rating = parseFloat(ratingInput.value);
@@ -277,42 +287,38 @@
                     alert('Please enter a restaurant name');
                     return;
                 }
-                
+
                 if (!dish) {
                     alert('Please enter a dish name');
                     return;
                 }
-                
+
                 if (isNaN(rating) || rating < 0.5 || rating > 5) {
                     alert('Please enter a valid rating between 0.5 and 5');
                     return;
                 }
-                
+
                 if (!review) {
                     alert('Please enter your review');
                     return;
                 }
 
-                // Create new entry
-                const newEntry = {
-                    id: Date.now(),
-                    restaurant,
-                    dish,
-                    rating,
-                    review,
-                    date: new Date().toISOString()
-                };
+                await  database.create_document(
+                    collection_id = "686ff514002d4e4beffb",
+                    document_id = "unique()",
+                    data = {
+                        "restaurant_name": restaurant,
+                        "dish_name": dish,
+                        "rating": rating,
+                        "reviews" : review
+                    })
 
-                // Add to entries array
-                entries.unshift(newEntry); // Add to beginning to show newest first
-                saveData();
-                
                 // Clear inputs
                 restaurantInput.value = '';
                 dishInput.value = '';
                 ratingInput.value = '';
                 reviewInput.value = '';
-                
+
                 // Refresh the list
                 renderEntries();
             }
@@ -330,10 +336,10 @@
                 // Remove the selected entry
                 entries = entries.filter(entry => entry.id !== selectedEntryId);
                 saveData();
-                
+
                 // Reset selection
                 selectedEntryId = null;
-                
+
                 // Refresh the list
                 renderEntries();
             }
@@ -369,7 +375,7 @@
 
                 // Add click event to entries
                 document.querySelectorAll('.entry').forEach(entry => {
-                    entry.addEventListener('click', function() {
+                    entry.addEventListener('click', function () {
                         selectedEntryId = parseInt(this.getAttribute('data-id'));
                         renderEntries();
                     });
@@ -380,10 +386,10 @@
                 const fullStars = Math.floor(rating);
                 const halfStar = rating % 1 >= 0.5 ? 1 : 0;
                 const emptyStars = 5 - fullStars - halfStar;
-                
-                return '★'.repeat(fullStars) + 
-                       (halfStar ? '½' : '') + 
-                       '☆'.repeat(emptyStars);
+
+                return '★'.repeat(fullStars) +
+                    (halfStar ? '½' : '') +
+                    '☆'.repeat(emptyStars);
             }
 
             function saveData() {
@@ -393,4 +399,5 @@
         });
     </script>
 </body>
+
 </html>
