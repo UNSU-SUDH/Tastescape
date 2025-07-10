@@ -66,6 +66,8 @@ def add_review():
     db.commit()
     return jsonify({"status": "added", "restaurant_id": restaurant_id})
 
+
+#just commeting
 @app.route("/reviews/<int:restaurant_id>", methods=["GET"])
 def get_reviews(restaurant_id):
     cursor.execute("SELECT * FROM reviews WHERE restaurant_id = %s", (restaurant_id,))
