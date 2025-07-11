@@ -244,9 +244,9 @@
     </div>
 
     <!-- Add Supabase JS -->
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase immediately when script loads
+        // Initialize Supabase with your credentials
         const supabaseUrl = 'https://eoaoneirlywfihygecyz.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvYW9uZWlybHl3ZmloeWdlY3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyMzI2MTMsImV4cCI6MjA2NzgwODYxM30.RMFjSGMKzKGCtnQCxoVWXRXl8WTDEv6xLIVZR_HbO3A';
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -272,7 +272,24 @@
             addBtn.addEventListener('click', addEntry);
             removeBtn.addEventListener('click', removeEntry);
 
-            // Modified addEntry function
+            // Functions
+            async function loadEntries() {
+                try {
+                    const { data, error } = await supabase
+                        .from('reviews')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) throw error;
+                    
+                    entries = data || [];
+                    renderEntries();
+                } catch (error) {
+                    console.error('Error loading entries:', error);
+                    entriesList.innerHTML = '<div class="no-entries">Error loading entries. Please refresh the page.</div>';
+                }
+            }
+
             async function addEntry() {
                 const restaurant = restaurantInput.value.trim();
                 const dish = dishInput.value.trim();
@@ -301,25 +318,20 @@
                 }
 
                 try {
-                    console.log('Inserting data:', { restaurant, dish, rating, review });
-                    
                     const { data, error } = await supabase
                         .from('reviews')
-                        .insert([{
-                            restaurant,
-                            dish,
-                            rating,
-                            review
-                        }])
+                        .insert([
+                            {
+                                restaurant,
+                                dish,
+                                rating,
+                                review
+                            }
+                        ])
                         .select();
                     
-                    if (error) {
-                        console.error('Supabase error:', error);
-                        throw error;
-                    }
+                    if (error) throw error;
 
-                    console.log('Insert successful:', data);
-                    
                     // Clear inputs
                     restaurantInput.value = '';
                     dishInput.value = '';
@@ -331,12 +343,89 @@
                     
                     alert('Entry added successfully!');
                 } catch (error) {
-                    console.error('Full error:', error);
+                    console.error('Error adding entry:', error);
                     alert('Failed to add entry: ' + error.message);
                 }
             }
 
-            // [Keep all your other existing functions]
+            async function removeEntry() {
+                if (!selectedEntryId) {
+                    alert('Please select an entry to remove');
+                    return;
+                }
+
+                if (!confirm('Are you sure you want to remove this entry?')) {
+                    return;
+                }
+
+                try {
+                    const { error } = await supabase
+                        .from('reviews')
+                        .delete()
+                        .eq('id', selectedEntryId);
+                    
+                    if (error) throw error;
+
+                    // Reset selection
+                    selectedEntryId = null;
+                    
+                    // Refresh the list
+                    await loadEntries();
+                    
+                    alert('Entry removed successfully!');
+                } catch (error) {
+                    console.error('Error removing entry:', error);
+                    alert('Failed to remove entry: ' + error.message);
+                }
+            }
+
+            function renderEntries() {
+                if (entries.length === 0) {
+                    entriesList.innerHTML = '<div class="no-entries">No entries yet. Add your first restaurant experience!</div>';
+                    return;
+                }
+
+                entriesList.innerHTML = entries.map(entry => `
+                    <div class="entry ${entry.id === selectedEntryId ? 'selected' : ''}" data-id="${entry.id}">
+                        <div class="entry-info">
+                            <div class="entry-field">
+                                <strong>Restaurant</strong>
+                                ${entry.restaurant}
+                            </div>
+                            <div class="entry-field">
+                                <strong>Dish</strong>
+                                ${entry.dish}
+                            </div>
+                            <div class="entry-field">
+                                <strong>Rating</strong>
+                                <span class="rating">${renderStars(entry.rating)} (${entry.rating})</span>
+                            </div>
+                            <div class="entry-field">
+                                <strong>Review</strong>
+                                ${entry.review}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add click event to entries
+                document.querySelectorAll('.entry').forEach(entry => {
+                    entry.addEventListener('click', function() {
+                        selectedEntryId = this.getAttribute('data-id');
+                        renderEntries();
+                    });
+                });
+            }
+
+            function renderStars(rating) {
+                const fullStars = Math.floor(rating);
+                const halfStar = rating % 1 >= 0.5 ? 1 : 0;
+                const emptyStars = 5 - fullStars - halfStar;
+                
+                return '★'.repeat(fullStars) + 
+                       (halfStar ? '½' : '') + 
+                       '☆'.repeat(emptyStars);
+            }
         });
     </script>
 </body>
