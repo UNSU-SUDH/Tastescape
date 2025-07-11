@@ -242,15 +242,12 @@
             </div>
         </div>
     </div>
-
-    <!-- Add Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase with your credentials
         const supabaseUrl = 'https://eoaoneirlywfihygecyz.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvYW9uZWlybHl3ZmloeWdlY3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyMzI2MTMsImV4cCI6MjA2NzgwODYxM30.RMFjSGMKzKGCtnQCxoVWXRXl8WTDEv6xLIVZR_HbO3A';
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
+        
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
             const restaurantInput = document.getElementById('restaurant');
@@ -262,35 +259,18 @@
             const entriesList = document.getElementById('entries-list');
 
             // Data Storage
-            let entries = [];
+            let entries = JSON.parse(localStorage.getItem('tastescape-entries')) || [];
             let selectedEntryId = null;
 
             // Initialize the app
-            loadEntries();
+            renderEntries();
 
             // Event Listeners
             addBtn.addEventListener('click', addEntry);
             removeBtn.addEventListener('click', removeEntry);
 
             // Functions
-            async function loadEntries() {
-                try {
-                    const { data, error } = await supabase
-                        .from('reviews')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) throw error;
-                    
-                    entries = data || [];
-                    renderEntries();
-                } catch (error) {
-                    console.error('Error loading entries:', error);
-                    entriesList.innerHTML = '<div class="no-entries">Error loading entries. Please refresh the page.</div>';
-                }
-            }
-
-            async function addEntry() {
+            function addEntry() {
                 const restaurant = restaurantInput.value.trim();
                 const dish = dishInput.value.trim();
                 const rating = parseFloat(ratingInput.value);
@@ -317,38 +297,31 @@
                     return;
                 }
 
-                try {
-                    const { data, error } = await supabase
-                        .from('reviews')
-                        .insert([
-                            {
-                                restaurant,
-                                dish,
-                                rating,
-                                review
-                            }
-                        ])
-                        .select();
-                    
-                    if (error) throw error;
+                // Create new entry
+                const newEntry = {
+                    id: Date.now(),
+                    restaurant,
+                    dish,
+                    rating,
+                    review,
+                    date: new Date().toISOString()
+                };
 
-                    // Clear inputs
-                    restaurantInput.value = '';
-                    dishInput.value = '';
-                    ratingInput.value = '';
-                    reviewInput.value = '';
-                    
-                    // Refresh the list
-                    await loadEntries();
-                    
-                    alert('Entry added successfully!');
-                } catch (error) {
-                    console.error('Error adding entry:', error);
-                    alert('Failed to add entry: ' + error.message);
-                }
+                // Add to entries array
+                entries.unshift(newEntry); // Add to beginning to show newest first
+                saveData();
+                
+                // Clear inputs
+                restaurantInput.value = '';
+                dishInput.value = '';
+                ratingInput.value = '';
+                reviewInput.value = '';
+                
+                // Refresh the list
+                renderEntries();
             }
 
-            async function removeEntry() {
+            function removeEntry() {
                 if (!selectedEntryId) {
                     alert('Please select an entry to remove');
                     return;
@@ -358,25 +331,15 @@
                     return;
                 }
 
-                try {
-                    const { error } = await supabase
-                        .from('reviews')
-                        .delete()
-                        .eq('id', selectedEntryId);
-                    
-                    if (error) throw error;
-
-                    // Reset selection
-                    selectedEntryId = null;
-                    
-                    // Refresh the list
-                    await loadEntries();
-                    
-                    alert('Entry removed successfully!');
-                } catch (error) {
-                    console.error('Error removing entry:', error);
-                    alert('Failed to remove entry: ' + error.message);
-                }
+                // Remove the selected entry
+                entries = entries.filter(entry => entry.id !== selectedEntryId);
+                saveData();
+                
+                // Reset selection
+                selectedEntryId = null;
+                
+                // Refresh the list
+                renderEntries();
             }
 
             function renderEntries() {
@@ -411,7 +374,7 @@
                 // Add click event to entries
                 document.querySelectorAll('.entry').forEach(entry => {
                     entry.addEventListener('click', function() {
-                        selectedEntryId = this.getAttribute('data-id');
+                        selectedEntryId = parseInt(this.getAttribute('data-id'));
                         renderEntries();
                     });
                 });
@@ -425,6 +388,11 @@
                 return '★'.repeat(fullStars) + 
                        (halfStar ? '½' : '') + 
                        '☆'.repeat(emptyStars);
+            }
+
+            function saveData() {
+                localStorage.setItem('tastescape-entries', JSON.stringify(entries));
+                // In production: Add API call here to save to server
             }
         });
     </script>
