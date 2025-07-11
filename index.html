@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tastescape - Supabase Edition</title>
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .review { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .stars { color: gold; font-size: 20px; }
+    input, textarea, button { display: block; margin: 10px 0; width: 100%; padding: 8px; }
+    button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Tastescape (Supabase)</h1>
+  
+  <!-- Add Review Form -->
+  <h2>Add Entry</h2>
+  <input type="text" id="restaurant" placeholder="Restaurant Name" required>
+  <input type="text" id="dish" placeholder="Dish Name" required>
+  <input type="number" id="rating" placeholder="Rating (0.5-5)" min="0.5" max="5" step="0.5" required>
+  <textarea id="review" placeholder="Your Review" required></textarea>
+  <button onclick="addReview()">Submit Review</button>
+  
+  <!-- Display Reviews -->
+  <h2>Restaurant Reviews</h2>
+  <div id="reviews-list"></div>
+
+  <!-- Supabase Integration -->
+  <script>
+    // Initialize Supabase (Replace with your keys!)
+    const supabaseUrl = 'https://YOUR_PROJECT_ID.supabase.co';
+    const supabaseKey = 'YOUR_ANON_KEY';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Add a Review
+    async function addReview() {
+      const restaurant = document.getElementById("restaurant").value;
+      const dish = document.getElementById("dish").value;
+      const rating = parseFloat(document.getElementById("rating").value);
+      const review = document.getElementById("review").value;
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert([{ restaurant, dish, rating, review }]);
+
+      if (error) {
+        alert("Error adding review: " + error.message);
+      } else {
+        alert("Review added successfully!");
+        document.getElementById("restaurant").value = "";
+        document.getElementById("dish").value = "";
+        document.getElementById("rating").value = "";
+        document.getElementById("review").value = "";
+        loadReviews();
+      }
+    }
+
+    // Load Reviews
+    async function loadReviews() {
+      const reviewsList = document.getElementById("reviews-list");
+      reviewsList.innerHTML = "<p>Loading reviews...</p>";
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        reviewsList.innerHTML = "<p>Error loading reviews.</p>";
+      } else if (data.length === 0) {
+        reviewsList.innerHTML = "<p>No reviews yet. Be the first!</p>";
+      } else {
+        reviewsList.innerHTML = "";
+        data.forEach((item) => {
+          reviewsList.innerHTML += `
+            <div class="review">
+              <h3>${item.restaurant}</h3>
+              <p><strong>Dish:</strong> ${item.dish}</p>
+              <p class="stars">${"★".repeat(Math.floor(item.rating))}${"☆".repeat(5 - Math.floor(item.rating))} (${item.rating})</p>
+              <p><strong>Review:</strong> ${item.review}</p>
+              <small>Posted at: ${new Date(item.created_at).toLocaleString()}</small>
+            </div>
+          `;
+        });
+      }
+    }
+
+    // Load reviews on page load
+    window.onload = loadReviews;
+  </script>
+</body>
+</html>
